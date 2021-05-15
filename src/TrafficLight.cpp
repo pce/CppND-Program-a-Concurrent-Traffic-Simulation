@@ -4,7 +4,7 @@
 
 /* Implementation of class "MessageQueue" */
 
-/* 
+ 
 template <typename T>
 T MessageQueue<T>::receive()
 {
@@ -19,11 +19,11 @@ void MessageQueue<T>::send(T &&msg)
     // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex> 
     // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
 }
-*/
+
 
 /* Implementation of class "TrafficLight" */
 
-/* 
+ 
 TrafficLight::TrafficLight()
 {
     _currentPhase = TrafficLightPhase::red;
@@ -55,4 +55,3 @@ void TrafficLight::cycleThroughPhases()
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles. 
 }
 
-*/
