@@ -42,6 +42,8 @@ TrafficLight::TrafficLight()
     _currentPhase = TrafficLightPhase::red;
 }
 
+TrafficLight::~TrafficLight() {}
+
 void TrafficLight::waitForGreen()
 {
     // FP.5b : add the implementation of the method waitForGreen, in which an infinite while-loop 
@@ -91,7 +93,6 @@ void TrafficLight::cycleThroughPhases()
     };
 
     std::unique_lock<std::mutex> lock(_mutex);
-    // std::cout << randomCycleDuration() << std::endl; 
     std::cout << "TrafficLight #" << _id << "::cycleThroughPhases: thread id = " << std::this_thread::get_id() << std::endl;
     lock.unlock();
 
@@ -106,9 +107,8 @@ void TrafficLight::cycleThroughPhases()
 
         now = std::chrono::system_clock::now();
         std::chrono::duration<double> diff = now-start;
-        if (diff.count() > randomCycleDuration()) {
-           TrafficLightPhase toggledPhase = toggleCurrentPhase();
-            // TrafficLightPhase toggledPhase = _currentPhase; 
+        if (diff.count() * 1000 > randomCycleDuration()) {
+            TrafficLightPhase toggledPhase = toggleCurrentPhase(); 
             _trafficLightPhaseMQ.send(std::move(toggledPhase));
             // reset 
             start = std::chrono::system_clock::now();
