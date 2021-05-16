@@ -13,11 +13,13 @@ T MessageQueue<T>::receive()
     std::unique_lock<std::mutex> lock(_mutex);
 
     // wait for and receive new messages and  
+    // _condition.wait(lock, [this] {
     _condition.wait(lock, [&] {
         return !_queue.empty();
     });
     // pull from the queue using move semantics
     T msg = std::move(_queue.front());
+    _queue.pop_front();
     // return received object
     return msg;
 }
@@ -53,6 +55,10 @@ void TrafficLight::waitForGreen()
     
     while (true) {
         receivedPhase = _trafficLightPhaseMQ.receive();
+        std::unique_lock<std::mutex> lock(_mutex);
+        std::cout << "TrafficLight #" << _id << "::waitForGreen: receivedPhase: " << receivedPhase << " thread id = " << std::this_thread::get_id() << std::endl;
+        lock.unlock();
+ 
         if(receivedPhase == TrafficLightPhase::green) {
             break;
         }
@@ -61,6 +67,7 @@ void TrafficLight::waitForGreen()
 
 TrafficLightPhase TrafficLight::getCurrentPhase()
 {
+    std::unique_lock<std::mutex> lock(_mutex);
     return _currentPhase;
 }
 
@@ -82,14 +89,14 @@ void TrafficLight::cycleThroughPhases()
         return distrib(gen);
     };
 
+    // auto toggleCurrentPhase = [this](){
     auto toggleCurrentPhase = [&](){
         if(_currentPhase == TrafficLightPhase::green) {
-            _currentPhase = TrafficLightPhase::red;
-        } else if(_currentPhase == TrafficLightPhase::red) {
-            _currentPhase = TrafficLightPhase::green;
+            return TrafficLightPhase::red;
+        } else { 
+            // if(_currentPhase == TrafficLightPhase::red) {
+            return TrafficLightPhase::green;
         }
-        TrafficLightPhase newPhase = _currentPhase;
-        return newPhase;
     };
 
     std::unique_lock<std::mutex> lock(_mutex);
@@ -108,12 +115,12 @@ void TrafficLight::cycleThroughPhases()
         now = std::chrono::system_clock::now();
         std::chrono::duration<double> diff = now-start;
         if (diff.count() * 1000 > randomCycleDuration()) {
-            TrafficLightPhase toggledPhase = toggleCurrentPhase(); 
+            _currentPhase = toggleCurrentPhase();
+            TrafficLightPhase toggledPhase = _currentPhase; 
             _trafficLightPhaseMQ.send(std::move(toggledPhase));
             // reset 
             start = std::chrono::system_clock::now();
         }
-
     }
 
 }
