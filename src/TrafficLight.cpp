@@ -13,7 +13,6 @@ T MessageQueue<T>::receive()
     std::unique_lock<std::mutex> lock(_mutex);
 
     // wait for and receive new messages and  
-    // _condition.wait(lock, [this] {
     _condition.wait(lock, [&] {
         return !_queue.empty();
     });
@@ -89,7 +88,6 @@ void TrafficLight::cycleThroughPhases()
         return distrib(gen);
     };
 
-    // auto toggleCurrentPhase = [this](){
     auto toggleCurrentPhase = [&](){
         if(_currentPhase == TrafficLightPhase::green) {
             return TrafficLightPhase::red;
@@ -105,6 +103,7 @@ void TrafficLight::cycleThroughPhases()
 
     auto start = std::chrono::system_clock::now();    
     auto now = std::chrono::system_clock::now();
+    int dur = randomCycleDuration();
 
     // FP.2a : infinite loop that toggles the current phase of the traffic light between red and green and sends an update method 
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
@@ -114,12 +113,15 @@ void TrafficLight::cycleThroughPhases()
 
         now = std::chrono::system_clock::now();
         std::chrono::duration<double> diff = now-start;
-        if (diff.count() * 1000 > randomCycleDuration()) {
+        if (diff.count() * 1000 > dur) {
+            lock.lock();
             _currentPhase = toggleCurrentPhase();
             TrafficLightPhase toggledPhase = _currentPhase; 
             _trafficLightPhaseMQ.send(std::move(toggledPhase));
+            lock.unlock();
             // reset 
             start = std::chrono::system_clock::now();
+            dur = randomCycleDuration();
         }
     }
 
